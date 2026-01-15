@@ -1,0 +1,138 @@
+Chef Smart: Desarrollo de una Aplicación Móvil de Recetas con React Native, Expo y Firebase
+
+
+AUTORES:
+
+
+Rocha Yanez, Jahir Elian1
+1Escuela Politécnica Nacional, Quito, Ecuador, jahir.rocha@epn.edu.ec, 0009-0009-2176-0037
+
+
+
+
+RESUMEN
+Se desarrolló una aplicación móvil multiplataforma denominada Chef Smart, orientada a la búsqueda, exploración y gestión de recetas culinarias. El objetivo principal fue crear una solución tecnológica que permitiera a los usuarios descubrir recetas basándose en ingredientes disponibles, categorías gastronómicas y preferencias personales, implementando un sistema de autenticación seguro para la gestión individualizada de favoritos. La metodología empleada consistió en el desarrollo ágil utilizando React Native con Expo como framework de desarrollo, TypeScript para tipado estático, Firebase Authentication para la gestión de usuarios, y la integración con TheMealDB API como fuente de datos gastronómicos. Se implementó un sistema de diseño UI/UX premium con gradientes, animaciones fluidas y componentes reutilizables siguiendo principios de diseño mobile-first. Los resultados obtenidos demuestran una aplicación funcional con cuatro módulos principales: exploración de recetas con búsqueda en tiempo real, sistema de despensa inteligente para búsqueda por ingredientes, gestión de favoritos sincronizada por usuario, y perfil con autenticación completa. La arquitectura basada en contextos de React garantiza la sincronización del estado global, mientras que AsyncStorage proporciona persistencia de datos locales. Se concluye que la combinación de tecnologías modernas como Expo Router, Firebase y React Native permite desarrollar aplicaciones móviles de alta calidad con experiencia de usuario nativa, preparadas para distribución en Google Play Store.
+
+Palabras claves: React Native; Expo; Firebase Authentication; aplicación móvil; desarrollo multiplataforma.
+
+ABSTRACT
+A cross-platform mobile application called Chef Smart was developed, focused on searching, exploring, and managing culinary recipes. The main objective was to create a technological solution that would allow users to discover recipes based on available ingredients, gastronomic categories, and personal preferences, implementing a secure authentication system for individualized favorites management. The methodology employed consisted of agile development using React Native with Expo as the development framework, TypeScript for static typing, Firebase Authentication for user management, and integration with TheMealDB API as a gastronomic data source. A premium UI/UX design system was implemented with gradients, fluid animations, and reusable components following mobile-first design principles. The results obtained demonstrate a functional application with four main modules: recipe exploration with real-time search, intelligent pantry system for ingredient-based search, user-synchronized favorites management, and profile with complete authentication. The React context-based architecture ensures global state synchronization, while AsyncStorage provides local data persistence. It is concluded that the combination of modern technologies such as Expo Router, Firebase, and React Native allows for the development of high-quality mobile applications with native user experience, ready for distribution on Google Play Store.
+
+Keywords: React Native; Expo; Firebase Authentication; mobile application; cross-platform development.
+
+INTRODUCCIÓN
+El desarrollo de aplicaciones móviles ha experimentado una transformación significativa con la aparición de frameworks multiplataforma que permiten crear experiencias nativas utilizando una única base de código. En el contexto actual, donde los usuarios demandan aplicaciones rápidas, intuitivas y visualmente atractivas, surge la necesidad de implementar soluciones tecnológicas que combinen eficiencia en el desarrollo con excelencia en la experiencia de usuario.
+
+La industria gastronómica digital presenta una oportunidad única para la aplicación de estas tecnologías. Los usuarios modernos buscan soluciones que les permitan descubrir nuevas recetas, gestionar sus ingredientes disponibles y mantener un registro personalizado de sus preparaciones favoritas. Sin embargo, muchas aplicaciones existentes carecen de una experiencia de usuario fluida, sistemas de autenticación robustos o interfaces visualmente atractivas.
+
+El problema que se aborda en este proyecto es la fragmentación de la experiencia del usuario al buscar y gestionar recetas culinarias, donde la información no está personalizada ni persiste entre sesiones. La importancia de resolver este problema radica en la creciente demanda de aplicaciones que ofrezcan experiencias personalizadas y seguras, especialmente en el contexto de la cocina doméstica donde los usuarios requieren acceso rápido a sus recetas favoritas.
+
+Este trabajo presenta el desarrollo de Chef Smart, una aplicación móvil que integra tecnologías de vanguardia como React Native, Expo, TypeScript y Firebase para ofrecer una solución completa de gestión de recetas. La aplicación implementa un sistema de autenticación seguro, sincronización de favoritos por usuario, búsqueda inteligente por ingredientes y una interfaz de usuario premium con animaciones y gradientes que mejoran significativamente la experiencia del usuario.
+
+METODOLOGÍA
+El desarrollo de Chef Smart se llevó a cabo siguiendo una metodología ágil iterativa, donde cada funcionalidad fue implementada, probada y refinada antes de proceder con la siguiente. El proyecto se estructuró en las siguientes fases:
+
+Configuración del Entorno de Desarrollo
+Se utilizó Expo SDK 54 como framework principal de desarrollo, aprovechando sus capacidades de desarrollo rápido y su ecosistema de bibliotecas optimizadas para React Native. TypeScript fue seleccionado como lenguaje de programación por sus capacidades de tipado estático, lo cual reduce errores en tiempo de ejecución y mejora la mantenibilidad del código. La estructura del proyecto siguió el patrón de Expo Router para la navegación basada en archivos.
+
+Arquitectura de la Aplicación
+La arquitectura implementada se basa en el patrón de Context API de React para la gestión del estado global. Se desarrollaron dos contextos principales: AuthContext para la gestión de autenticación y FavoritesContext para la sincronización de recetas favoritas. Esta arquitectura garantiza que los cambios de estado se propaguen instantáneamente a todos los componentes suscritos.
+
+Sistema de Autenticación
+Se implementó Firebase Authentication con persistencia mediante AsyncStorage para React Native. El flujo de autenticación incluye registro de usuarios con email y contraseña, inicio de sesión con manejo de errores traducidos al español, y cierre de sesión con confirmación. La protección de rutas se implementó utilizando useSegments y useRouter de Expo Router para redireccionar automáticamente usuarios no autenticados.
+
+Integración con API Externa
+TheMealDB fue seleccionada como fuente de datos gastronómicos, proporcionando acceso a más de 300 recetas categorizadas. Se desarrolló una capa de servicios (services/api.ts) que encapsula las llamadas HTTP y maneja errores de red. Las funcionalidades implementadas incluyen búsqueda por nombre, filtrado por categoría, filtrado por ingrediente y obtención de recetas aleatorias.
+
+Diseño de Interfaz de Usuario
+Se desarrolló un sistema de diseño completo (constants/theme.ts) que incluye paleta de colores con variantes primarias (naranja), secundarias (coral) y de acento, sistema de espaciado consistente, tipografía escalable, sombras y bordes redondeados estandarizados. Los componentes visuales utilizan expo-linear-gradient para efectos de gradiente y lucide-react-native para iconografía consistente.
+
+Sistema de Favoritos
+Se implementó un sistema de favoritos que persiste localmente mediante AsyncStorage con claves únicas por usuario (chef_smart_favorites_{userId}). El contexto FavoritesContext proporciona funciones toggleFavorite e isFavorite que se sincronizan instantáneamente en todas las pantallas de la aplicación.
+
+Preparación para Distribución
+Se configuró el archivo app.json con los parámetros necesarios para Google Play Store, incluyendo package name (com.chefsmart.app), iconos adaptativos, splash screen y permisos de Internet. Se generaron assets en las dimensiones requeridas: icon.png (1024x1024), adaptive-icon.png (1024x1024), splash.png (1284x2778) y favicon.png (48x48).
+
+RESULTADOS Y DISCUSIÓN
+El desarrollo de Chef Smart resultó en una aplicación funcional con las siguientes características implementadas:
+
+Módulo de Exploración (Home)
+La pantalla principal presenta una receta del día obtenida aleatoriamente de la API, un sistema de búsqueda en tiempo real con debounce para optimizar las llamadas a la API, categorías gastronómicas con tarjetas visuales que incluyen gradientes específicos por tipo de cocina, y resultados de búsqueda presentados en un grid responsivo con tarjetas de recetas que muestran imagen, título, categoría y botón de favorito.
+
+Módulo de Despensa (Pantry)
+Este módulo permite a los usuarios seleccionar ingredientes disponibles mediante chips interactivos con indicadores de selección. Al presionar "Encontrar Recetas", la aplicación consulta la API filtrando por los ingredientes seleccionados y presenta los resultados con scroll automático. Se implementó manejo especial para categorías como "Pasta" que requieren búsqueda por categoría en lugar de ingrediente.
+
+Módulo de Favoritos
+Los favoritos se cargan desde el contexto global y se sincronizan en tiempo real. La pantalla muestra estadísticas del usuario, un grid de recetas favoritas con opción de eliminar, y un estado vacío con llamada a la acción para explorar recetas. La persistencia por usuario garantiza que cada cuenta mantenga sus propios favoritos.
+
+Módulo de Perfil
+El perfil del usuario presenta información de la cuenta (nombre, email) obtenida de Firebase, estadísticas de favoritos sincronizadas con el contexto, menú de configuración con navegación a favoritos, y botón de cierre de sesión con confirmación mediante Alert.
+
+Pantalla de Detalle de Receta
+Se implementó una vista detallada con header animado que responde al scroll, sistema de pestañas (Descripción, Ingredientes, Instrucciones), ingredientes presentados como chips con cantidades, instrucciones numeradas en tarjetas individuales con indicador de paso completado, y botón "Comenzar a Cocinar" que navega automáticamente a la pestaña de instrucciones.
+
+Sistema de Navegación
+La navegación se implementó utilizando Expo Router con Tab Navigator para las cuatro pestañas principales y Stack Navigator para pantallas de detalle y autenticación. La protección de rutas redirige automáticamente a login si no hay sesión activa, y a la pantalla principal si el usuario ya está autenticado.
+
+Tabla 1. Tecnologías implementadas en Chef Smart
+
+Tecnología          Versión     Propósito
+React Native        0.76        Framework de desarrollo móvil
+Expo SDK            54          Plataforma de desarrollo
+TypeScript          5.3         Tipado estático
+Firebase            12.8        Autenticación de usuarios
+Expo Router         6.0         Navegación basada en archivos
+AsyncStorage        2.2         Persistencia local de datos
+
+Discusión
+Los resultados obtenidos demuestran que la arquitectura basada en Context API de React resuelve efectivamente el problema de sincronización de estado entre componentes. Inicialmente, el hook useFavorites creaba instancias independientes de estado, causando desincronización entre pantallas. La migración a un contexto global solucionó completamente este problema, permitiendo que un cambio en cualquier pantalla se refleje instantáneamente en toda la aplicación.
+
+La implementación de Firebase Authentication con AsyncStorage persistence garantiza que la sesión del usuario persista entre reinicios de la aplicación, mejorando significativamente la experiencia de usuario al eliminar la necesidad de iniciar sesión repetidamente.
+
+El sistema de diseño centralizado en theme.ts demostró ser fundamental para mantener consistencia visual. Al definir colores, espaciados y tipografías en un único archivo, se facilita tanto el desarrollo como futuras actualizaciones de la interfaz.
+
+La integración con TheMealDB presentó desafíos específicos, particularmente con ingredientes que también existen como categorías (como "Pasta"). La solución implementada utiliza un Set de ingredientes especiales que requieren búsqueda por categoría, demostrando la importancia de entender las particularidades de las APIs externas.
+
+El ajuste de la barra de navegación para dispositivos Android requirió experimentación con paddingBottom y height para garantizar visibilidad sobre los botones de navegación del sistema, evidenciando las diferencias de implementación entre plataformas que deben considerarse en desarrollo multiplataforma.
+
+CONCLUSIONES
+El desarrollo de Chef Smart demuestra la viabilidad de crear aplicaciones móviles de alta calidad utilizando tecnologías multiplataforma modernas. Los objetivos planteados fueron cumplidos satisfactoriamente: se implementó un sistema de exploración de recetas con múltiples métodos de búsqueda, un sistema de autenticación robusto con Firebase, gestión de favoritos sincronizada por usuario, y una interfaz de usuario premium con animaciones y gradientes.
+
+La arquitectura basada en contextos de React probó ser efectiva para la gestión de estado global, eliminando problemas de sincronización y mejorando la experiencia del usuario. La combinación de Expo Router con protección de rutas proporciona un flujo de navegación seguro y predecible.
+
+Como limitaciones del estudio, se identifica la dependencia de TheMealDB como única fuente de datos, lo cual restringe el catálogo de recetas disponibles. Futuras investigaciones podrían explorar la integración de múltiples APIs o el desarrollo de un backend propio con contribuciones de usuarios.
+
+Se recomienda para trabajos futuros la implementación de notificaciones push para sugerencias de recetas, modo offline con caché de recetas favoritas, integración de reconocimiento de imagen para identificación de ingredientes, y funcionalidades sociales para compartir recetas entre usuarios.
+
+La aplicación está preparada para su distribución en Google Play Store, con todos los assets y configuraciones necesarias implementadas. El código fuente sigue principios de clean code y está estructurado para facilitar mantenimiento y escalabilidad.
+
+REFERENCIAS BIBLIOGRÁFICAS
+Expo Documentation. (2024). Expo Router: File-based routing for React Native. https://docs.expo.dev/router/introduction/
+
+Firebase. (2024). Firebase Authentication Documentation. Google. https://firebase.google.com/docs/auth
+
+Meta Platforms. (2024). React Native Documentation. https://reactnative.dev/docs/getting-started
+
+TheMealDB. (2024). Free Meal API Documentation. https://www.themealdb.com/api.php
+
+Microsoft. (2024). TypeScript Documentation. https://www.typescriptlang.org/docs/
+
+React. (2024). Context API Reference. Meta Platforms. https://react.dev/reference/react/useContext
+
+AsyncStorage. (2024). React Native Async Storage Documentation. https://react-native-async-storage.github.io/async-storage/
+
+Google. (2024). Material Design Guidelines for Mobile. https://m3.material.io/
+
+Expo. (2024). EAS Build Documentation. https://docs.expo.dev/build/introduction/
+
+Android Developers. (2024). Adaptive Icons Documentation. Google. https://developer.android.com/develop/ui/views/launch/icon_design_adaptive
+
+
+Declaración de Conflictos de Interés:
+El autor declara que no tiene conflictos de interés. El desarrollo del proyecto fue realizado con fines académicos sin financiamiento externo.
+
+Contribución de los autores:
+Rocha Yanez, Jahir Elian: Conceptualización, Metodología, Software, Validación, Investigación, Recursos, Curación de datos, Escritura - borrador original, Escritura - revisión y edición, Visualización, Administración del proyecto.
+
+
+Esta obra está bajo una licencia Creative Commons Atribución-No Comercial 4.0 Internacional CC BY-NC-SA 4.0 Licencia Creative Commons

@@ -1,12 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from "react";
+import { View, TextInput, Pressable, StyleSheet, Animated } from "react-native";
+import { Search, X } from "lucide-react-native";
 import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { Search, X } from 'lucide-react-native';
-import { colors, spacing, borderRadius, fontSize, shadows } from '../constants/theme';
+  colors,
+  spacing,
+  borderRadius,
+  fontSize,
+  shadows,
+} from "../constants/theme";
+import { useDebounce } from "../hooks/useAsync";
+import { useHaptics } from "../hooks/useHaptics";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -15,72 +18,132 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({
-  placeholder = 'Search recipes...',
+  placeholder = "Search recipes...",
   onSearch,
   debounceMs = 500,
-}: SearchBarProps) {
-  const [query, setQuery] = useState('');
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+}: Readonly<SearchBarProps>) {
+  const [query, setQuery] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const debouncedQuery = useDebounce(query, debounceMs);
+  const { trigger } = useHaptics();
+  const focusAnim = React.useRef(new Animated.Value(0)).current;
+
+  // Trigger search when debounced query changes
+  useEffect(() => {
+    onSearch(debouncedQuery);
+  }, [debouncedQuery, onSearch]);
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+    Animated.spring(focusAnim, {
+      toValue: 1,
+      useNativeDriver: false,
+      friction: 8,
+    }).start();
+  }, [focusAnim]);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+    Animated.spring(focusAnim, {
+      toValue: 0,
+      useNativeDriver: false,
+      friction: 8,
+    }).start();
+  }, [focusAnim]);
 
   const handleChangeText = useCallback((text: string) => {
     setQuery(text);
-
-    // Clear existing timer
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    // Set new timer for debounced search
-    const timer = setTimeout(() => {
-      onSearch(text);
-    }, debounceMs);
-
-    setDebounceTimer(timer);
-  }, [debounceTimer, debounceMs, onSearch]);
+  }, []);
 
   const handleClear = useCallback(() => {
-    setQuery('');
-    onSearch('');
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-  }, [debounceTimer, onSearch]);
+    trigger("light");
+    setQuery("");
+    onSearch("");
+  }, [onSearch, trigger]);
+
+  const borderColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.border, colors.primary],
+  });
+
+  const backgroundColor = focusAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [colors.surface, colors.primaryLight],
+  });
 
   return (
-    <View style={[styles.container, shadows.sm]}>
-      <Search size={20} color={colors.textSecondary} style={styles.icon} />
+    <Animated.View
+      style={[
+        styles.container,
+        shadows.md,
+        {
+          borderColor,
+          backgroundColor,
+        },
+      ]}
+      accessibilityRole="search"
+    >
+      <View
+        style={[styles.iconContainer, isFocused && styles.iconContainerFocused]}
+      >
+        <Search
+          size={20}
+          color={isFocused ? colors.primary : colors.textSecondary}
+        />
+      </View>
       <TextInput
         style={styles.input}
         placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
         value={query}
         onChangeText={handleChangeText}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         returnKeyType="search"
         autoCapitalize="none"
         autoCorrect={false}
+        accessibilityLabel="Search input"
+        accessibilityHint="Type to search for recipes"
       />
       {query.length > 0 && (
-        <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
-          <X size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        <Pressable
+          onPress={handleClear}
+          style={styles.clearButton}
+          accessibilityRole="button"
+          accessibilityLabel="Clear search"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <View style={styles.clearButtonInner}>
+            <X size={16} color={colors.surface} />
+          </View>
+        </Pressable>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.full,
+    borderRadius: borderRadius.xl,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: colors.border,
   },
-  icon: {
+  iconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.backgroundAlt,
     marginRight: spacing.sm,
+  },
+  iconContainerFocused: {
+    backgroundColor: colors.primaryLight,
   },
   input: {
     flex: 1,
@@ -90,6 +153,14 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: spacing.xs,
-    marginLeft: spacing.xs,
+    marginLeft: spacing.sm,
+  },
+  clearButtonInner: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.textMuted,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

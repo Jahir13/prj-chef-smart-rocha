@@ -1,87 +1,114 @@
-import React from 'react';
+import React, { memo } from "react";
+import { View, Text, StyleSheet, ImageBackground } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  ImageBackground,
-} from 'react-native';
-import { colors, spacing, borderRadius, fontSize, fontWeight, shadows } from '../constants/theme';
+  colors,
+  spacing,
+  borderRadius,
+  fontSize,
+  fontWeight,
+  shadows,
+  componentSizes,
+  textShadows,
+} from "../constants/theme";
+import {
+  getCategoryImage,
+  getCategoryGradient,
+} from "../constants/categoryAssets";
+import { AnimatedPressable } from "./ui";
+
+// ============================================================================
+// Types
+// ============================================================================
 
 interface CategoryCardProps {
-  name: string;
-  imageUrl?: string;
-  onPress: () => void;
+  /** Category name to display */
+  readonly name: string;
+  /** Optional custom image URL (overrides default category image) */
+  readonly imageUrl?: string;
+  /** Callback fired when the card is pressed */
+  readonly onPress: () => void;
 }
 
-// Category image URLs from TheMealDB
-const CATEGORY_IMAGES: Record<string, string> = {
-  Beef: 'https://www.themealdb.com/images/category/beef.png',
-  Chicken: 'https://www.themealdb.com/images/category/chicken.png',
-  Dessert: 'https://www.themealdb.com/images/category/dessert.png',
-  Lamb: 'https://www.themealdb.com/images/category/lamb.png',
-  Miscellaneous: 'https://www.themealdb.com/images/category/miscellaneous.png',
-  Pasta: 'https://www.themealdb.com/images/category/pasta.png',
-  Pork: 'https://www.themealdb.com/images/category/pork.png',
-  Seafood: 'https://www.themealdb.com/images/category/seafood.png',
-  Side: 'https://www.themealdb.com/images/category/side.png',
-  Starter: 'https://www.themealdb.com/images/category/starter.png',
-  Vegan: 'https://www.themealdb.com/images/category/vegan.png',
-  Vegetarian: 'https://www.themealdb.com/images/category/vegetarian.png',
-  Breakfast: 'https://www.themealdb.com/images/category/breakfast.png',
-  Goat: 'https://www.themealdb.com/images/category/goat.png',
-};
+// ============================================================================
+// Component
+// ============================================================================
 
-export default function CategoryCard({ name, imageUrl, onPress }: CategoryCardProps) {
-  const image = imageUrl || CATEGORY_IMAGES[name] || CATEGORY_IMAGES['Miscellaneous'];
+/**
+ * CategoryCard displays a category with a background image and gradient overlay.
+ * Used for category browsing in the app's home screen.
+ *
+ * @example
+ * <CategoryCard
+ *   name="Breakfast"
+ *   onPress={() => navigateToCategory("Breakfast")}
+ * />
+ */
+function CategoryCard({
+  name,
+  imageUrl,
+  onPress,
+}: CategoryCardProps): React.JSX.Element {
+  const imageSource = getCategoryImage(name, imageUrl);
+  const gradientColors = getCategoryGradient(name);
 
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       style={[styles.container, shadows.md]}
       onPress={onPress}
-      activeOpacity={0.85}
+      hapticFeedback="selection"
+      accessibilityRole="button"
+      accessibilityLabel={`${name} category`}
+      accessibilityHint={`Double tap to browse ${name.toLowerCase()} recipes`}
     >
       <ImageBackground
-        source={{ uri: image }}
+        source={{ uri: imageSource }}
         style={styles.background}
         imageStyle={styles.backgroundImage}
         resizeMode="cover"
       >
-        <View style={styles.overlay} />
-        <Text style={styles.name}>{name}</Text>
+        <LinearGradient colors={[...gradientColors]} style={styles.overlay} />
+        <View style={styles.content}>
+          <Text style={styles.categoryName}>{name}</Text>
+        </View>
       </ImageBackground>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 
+export default memo(CategoryCard);
+
+// ============================================================================
+// Styles
+// ============================================================================
+
 const styles = StyleSheet.create({
   container: {
-    width: 110,
-    height: 70,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    marginRight: spacing.sm,
+    width: componentSizes.categoryCard.width,
+    height: componentSizes.categoryCard.height,
+    borderRadius: borderRadius.xl,
+    overflow: "hidden",
+    marginRight: spacing.md,
   },
   background: {
     flex: 1,
-    justifyContent: 'flex-end',
-    padding: spacing.sm,
   },
   backgroundImage: {
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
   },
-  name: {
+  content: {
+    flex: 1,
+    justifyContent: "flex-end",
+    padding: spacing.md,
+  },
+  categoryName: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
     color: colors.surface,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    ...textShadows.subtle,
   },
 });

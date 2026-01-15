@@ -1,21 +1,41 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Heart } from 'lucide-react-native';
-import { colors, spacing, fontSize, fontWeight } from '../../constants/theme';
-import { getMealDetails } from '../../services/api';
-import { MealPreview } from '../../types';
-import RecipeCard from '../../components/RecipeCard';
-import { useFavorites } from '../../hooks/useFavorites';
+  StatusBar,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { Heart, BookmarkX, Compass } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import {
+  colors,
+  spacing,
+  borderRadius,
+  fontSize,
+  fontWeight,
+  shadows,
+} from "../../constants/theme";
+import { getMealDetails } from "../../services/api";
+import { MealPreview } from "../../types";
+import RecipeCard from "../../components/RecipeCard";
+import { useFavorites } from "../../contexts/FavoritesContext";
+
+const { width } = Dimensions.get("window");
 
 export default function FavoritesScreen() {
-  const { favorites, isLoading: isFavoritesLoading, toggleFavorite, isFavorite } = useFavorites();
+  const router = useRouter();
+  const {
+    favorites,
+    isLoading: isFavoritesLoading,
+    toggleFavorite,
+    isFavorite,
+  } = useFavorites();
   const [favoriteMeals, setFavoriteMeals] = useState<MealPreview[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -40,11 +60,11 @@ export default function FavoritesScreen() {
               };
             }
             return null;
-          })
+          }),
         );
         setFavoriteMeals(meals.filter((m): m is MealPreview => m !== null));
       } catch (error) {
-        console.error('Failed to load favorites:', error);
+        console.error("Failed to load favorites:", error);
       } finally {
         setIsLoading(false);
       }
@@ -55,53 +75,93 @@ export default function FavoritesScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <View style={styles.headerIcon}>
-        <Heart size={28} color={colors.secondary} fill={colors.secondary} />
+      <LinearGradient
+        colors={[colors.secondaryLight, colors.background]}
+        style={styles.headerGradient}
+      />
+      <View style={styles.headerIconContainer}>
+        <LinearGradient
+          colors={[colors.secondary, colors.secondaryDark]}
+          style={styles.headerIcon}
+        >
+          <Heart size={32} color={colors.surface} fill={colors.surface} />
+        </LinearGradient>
       </View>
       <Text style={styles.headerTitle}>My Favorites</Text>
       <Text style={styles.headerSubtitle}>
-        Your collection of saved recipes
+        Your personal collection of saved recipes
       </Text>
+      {favorites.length > 0 && (
+        <View style={styles.statsContainer}>
+          <View style={[styles.statBadge, shadows.sm]}>
+            <Text style={styles.statNumber}>{favorites.length}</Text>
+            <Text style={styles.statLabel}>Saved Recipes</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Heart size={64} color={colors.border} />
+      <View style={styles.emptyIconContainer}>
+        <BookmarkX size={48} color={colors.textMuted} />
+      </View>
       <Text style={styles.emptyTitle}>No favorites yet</Text>
       <Text style={styles.emptySubtitle}>
-        Start exploring recipes and save your favorites by tapping the heart icon!
+        Start exploring recipes and tap the heart icon to save your favorites
+        here!
       </Text>
+      <TouchableOpacity
+        style={styles.emptyCtaButton}
+        onPress={() => router.push("/(tabs)")}
+        activeOpacity={0.8}
+      >
+        <Compass size={20} color={colors.surface} />
+        <Text style={styles.emptyCtaText}>Explore Recipes</Text>
+      </TouchableOpacity>
     </View>
   );
 
   const renderFavorites = () => (
-    <View style={styles.favoritesGrid}>
-      {favoriteMeals.map((meal) => (
-        <RecipeCard
-          key={meal.idMeal}
-          meal={meal}
-          size="medium"
-          isFavorite={isFavorite(meal.idMeal)}
-          onToggleFavorite={() => toggleFavorite(meal.idMeal)}
-        />
-      ))}
+    <View style={styles.favoritesContainer}>
+      <Text style={styles.sectionTitle}>All Favorites</Text>
+      <View style={styles.favoritesGrid}>
+        {favoriteMeals.map((meal) => (
+          <RecipeCard
+            key={meal.idMeal}
+            meal={meal}
+            size="medium"
+            isFavorite={isFavorite(meal.idMeal)}
+            onToggleFavorite={() => toggleFavorite(meal.idMeal)}
+          />
+        ))}
+      </View>
     </View>
   );
 
   if (isFavoritesLoading || isLoading) {
     return (
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <StatusBar barStyle="dark-content" />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading favorites...</Text>
+          <View style={styles.loadingIconContainer}>
+            <Heart size={40} color={colors.secondary} />
+          </View>
+          <Text style={styles.loadingText}>Loading your favorites...</Text>
+          <ActivityIndicator
+            size="large"
+            color={colors.secondary}
+            style={{ marginTop: spacing.md }}
+          />
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <StatusBar barStyle="dark-content" />
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -125,35 +185,49 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: 100,
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.md,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: spacing.xl,
+  },
+  loadingIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.secondaryLight,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.lg,
   },
   loadingText: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
   },
   header: {
+    alignItems: "center",
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    alignItems: 'center',
+    position: "relative",
   },
-  headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255, 107, 107, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerIconContainer: {
     marginBottom: spacing.md,
   },
+  headerIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerTitle: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
     color: colors.text,
     marginBottom: spacing.xs,
@@ -161,33 +235,87 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
+    marginBottom: spacing.lg,
+  },
+  statsContainer: {
+    marginTop: spacing.sm,
+  },
+  statBadge: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.xl,
+    alignItems: "center",
+  },
+  statNumber: {
+    fontSize: fontSize.xxl,
+    fontWeight: fontWeight.bold,
+    color: colors.secondary,
+  },
+  statLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  sectionTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.lg,
   },
+  emptyIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.backgroundAlt,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.lg,
+  },
   emptyTitle: {
     fontSize: fontSize.xl,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
     color: colors.text,
-    marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
   emptySubtitle: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: spacing.xl,
+  },
+  emptyCtaButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.secondary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.full,
+    gap: spacing.sm,
+    minHeight: 52,
+  },
+  emptyCtaText: {
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.surface,
+  },
+  favoritesContainer: {
+    paddingTop: spacing.sm,
   },
   favoritesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
   },
 });

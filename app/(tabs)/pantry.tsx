@@ -1,29 +1,47 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  FlatList,
   ActivityIndicator,
   Dimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { UtensilsCrossed, Sparkles, ChevronRight } from 'lucide-react-native';
-import { colors, spacing, borderRadius, fontSize, fontWeight, shadows } from '../../constants/theme';
-import { COMMON_INGREDIENTS } from '../../constants/data';
-import { filterByIngredient } from '../../services/api';
-import { MealPreview } from '../../types';
-import IngredientChip from '../../components/IngredientChip';
-import RecipeCard from '../../components/RecipeCard';
-import { useFavorites } from '../../hooks/useFavorites';
+  StatusBar,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import {
+  UtensilsCrossed,
+  Sparkles,
+  ChevronRight,
+  Search,
+  X,
+} from "lucide-react-native";
+import {
+  colors,
+  spacing,
+  borderRadius,
+  fontSize,
+  fontWeight,
+  shadows,
+} from "../../constants/theme";
+import { COMMON_INGREDIENTS } from "../../constants/data";
+import { filterByIngredient, filterByCategory } from "../../services/api";
+import { MealPreview } from "../../types";
+import IngredientChip from "../../components/IngredientChip";
+import RecipeCard from "../../components/RecipeCard";
+import { useFavorites } from "../../contexts/FavoritesContext";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
+
+// Ingredients that should search by category instead of ingredient
+const CATEGORY_INGREDIENTS = new Set(["pasta"]);
 
 export default function PantryScreen() {
   const { isFavorite, toggleFavorite } = useFavorites();
-  
+  const scrollViewRef = useRef<ScrollView>(null);
+
   const [selectedIngredients, setSelectedIngredients] = useState<string[]>([]);
   const [results, setResults] = useState<MealPreview[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -33,7 +51,7 @@ export default function PantryScreen() {
     setSelectedIngredients((prev) =>
       prev.includes(ingredientId)
         ? prev.filter((id) => id !== ingredientId)
-        : [...prev, ingredientId]
+        : [...prev, ingredientId],
     );
     // Clear previous results when selection changes
     setHasSearched(false);
@@ -48,15 +66,28 @@ export default function PantryScreen() {
     try {
       // Use the first selected ingredient (API limitation)
       const firstIngredient = COMMON_INGREDIENTS.find(
-        (ing) => ing.id === selectedIngredients[0]
+        (ing) => ing.id === selectedIngredients[0],
       );
-      
+
       if (firstIngredient) {
-        const meals = await filterByIngredient(firstIngredient.name);
+        let meals: MealPreview[];
+
+        // Some ingredients like "pasta" work better as category search
+        if (CATEGORY_INGREDIENTS.has(firstIngredient.id.toLowerCase())) {
+          meals = await filterByCategory(firstIngredient.name);
+        } else {
+          meals = await filterByIngredient(firstIngredient.name);
+        }
+
         setResults(meals);
+
+        // Scroll to results after a short delay
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 300);
       }
     } catch (error) {
-      console.error('Failed to fetch recipes:', error);
+      console.error("Failed to fetch recipes:", error);
       setResults([]);
     } finally {
       setIsSearching(false);
@@ -71,12 +102,21 @@ export default function PantryScreen() {
 
   const renderHeader = () => (
     <View style={styles.header}>
-      <View style={styles.headerIcon}>
-        <UtensilsCrossed size={28} color={colors.primary} />
+      <LinearGradient
+        colors={[colors.primaryLighter, colors.background]}
+        style={styles.headerGradient}
+      />
+      <View style={styles.headerIconContainer}>
+        <LinearGradient
+          colors={[colors.primary, colors.primaryDark]}
+          style={styles.headerIcon}
+        >
+          <UtensilsCrossed size={32} color={colors.surface} />
+        </LinearGradient>
       </View>
       <Text style={styles.headerTitle}>My Pantry</Text>
       <Text style={styles.headerSubtitle}>
-        Select the ingredients you have, and we'll find delicious recipes for you!
+        Select ingredients you have and discover amazing recipes!
       </Text>
     </View>
   );
@@ -84,13 +124,30 @@ export default function PantryScreen() {
   const renderIngredientGrid = () => (
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>What's in your kitchen?</Text>
+        <View style={styles.sectionTitleContainer}>
+          <Search size={18} color={colors.primary} />
+          <Text style={styles.sectionTitle}>What's in your kitchen?</Text>
+        </View>
         {selectedIngredients.length > 0 && (
-          <TouchableOpacity onPress={clearSelection}>
-            <Text style={styles.clearButton}>Clear all</Text>
+          <TouchableOpacity
+            onPress={clearSelection}
+            style={styles.clearButtonContainer}
+          >
+            <X size={16} color={colors.secondary} />
+            <Text style={styles.clearButton}>Clear</Text>
           </TouchableOpacity>
         )}
       </View>
+      {selectedIngredients.length > 0 && (
+        <View style={[styles.selectionSummary, shadows.sm]}>
+          <Text style={styles.selectionText}>
+            <Text style={styles.selectionCount}>
+              {selectedIngredients.length}
+            </Text>{" "}
+            ingredient{selectedIngredients.length !== 1 ? "s" : ""} selected
+          </Text>
+        </View>
+      )}
       <View style={styles.ingredientGrid}>
         {COMMON_INGREDIENTS.map((ingredient) => (
           <IngredientChip
@@ -115,21 +172,29 @@ export default function PantryScreen() {
     return (
       <View style={styles.searchButtonContainer}>
         <TouchableOpacity
-          style={[styles.searchButton, shadows.lg]}
+          style={[styles.searchButton, shadows.colored]}
           onPress={handleFindRecipes}
           activeOpacity={0.9}
           disabled={isSearching}
         >
-          <View style={styles.searchButtonContent}>
-            <Sparkles size={24} color={colors.surface} />
+          <LinearGradient
+            colors={[colors.primary, colors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.searchButtonGradient}
+          >
+            <View style={styles.searchButtonIconContainer}>
+              <Sparkles size={24} color={colors.surface} />
+            </View>
             <View style={styles.searchButtonText}>
-              <Text style={styles.searchButtonTitle}>What can I cook?</Text>
+              <Text style={styles.searchButtonTitle}>Find Recipes</Text>
               <Text style={styles.searchButtonSubtitle} numberOfLines={1}>
-                With {selectedNames.join(', ')}
+                With {selectedNames.slice(0, 2).join(", ")}
+                {selectedNames.length > 2 ? "..." : ""}
               </Text>
             </View>
             <ChevronRight size={24} color={colors.surface} />
-          </View>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
@@ -140,18 +205,30 @@ export default function PantryScreen() {
 
     return (
       <View style={styles.resultsSection}>
-        <Text style={styles.sectionTitle}>
-          {results.length > 0
-            ? `Found ${results.length} recipes`
-            : 'No recipes found'}
-        </Text>
+        <View style={styles.resultsTitleContainer}>
+          <Text style={styles.resultsTitle}>
+            {results.length > 0
+              ? `Found ${results.length} recipes`
+              : "No recipes found"}
+          </Text>
+        </View>
 
         {isSearching ? (
-          <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+          <View style={styles.loadingResults}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.loadingResultsText}>
+              Finding delicious recipes...
+            </Text>
+          </View>
         ) : results.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No recipes found with these ingredients</Text>
-            <Text style={styles.emptySubtext}>Try selecting different ingredients</Text>
+            <View style={styles.emptyIconContainer}>
+              <UtensilsCrossed size={40} color={colors.textMuted} />
+            </View>
+            <Text style={styles.emptyText}>No recipes found</Text>
+            <Text style={styles.emptySubtext}>
+              Try selecting different ingredients
+            </Text>
           </View>
         ) : (
           <View style={styles.resultsGrid}>
@@ -171,8 +248,10 @@ export default function PantryScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <StatusBar barStyle="dark-content" />
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
@@ -196,25 +275,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 100,
+    paddingBottom: 120,
   },
   header: {
+    alignItems: "center",
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    alignItems: 'center',
+    position: "relative",
   },
-  headerIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primaryLight,
-    justifyContent: 'center',
-    alignItems: 'center',
+  headerGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  headerIconContainer: {
     marginBottom: spacing.md,
   },
+  headerIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerTitle: {
-    fontSize: fontSize.xxl,
+    fontSize: fontSize.xxxl,
     fontWeight: fontWeight.bold,
     color: colors.text,
     marginBottom: spacing.xs,
@@ -222,8 +306,8 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
+    textAlign: "center",
+    paddingHorizontal: spacing.md,
     lineHeight: 22,
   },
   section: {
@@ -231,29 +315,60 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: spacing.md,
+  },
+  sectionTitleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
   },
   sectionTitle: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
     color: colors.text,
+  },
+  clearButtonContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: colors.secondaryLight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
   },
   clearButton: {
     fontSize: fontSize.sm,
+    color: colors.secondary,
+    fontWeight: fontWeight.semibold,
+  },
+  selectionSummary: {
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
+  },
+  selectionText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+  },
+  selectionCount: {
+    fontWeight: fontWeight.bold,
     color: colors.primary,
-    fontWeight: fontWeight.medium,
+    fontSize: fontSize.md,
   },
   ingredientGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
-    marginHorizontal: -spacing.xs,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    gap: spacing.sm,
   },
   searchButtonContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
@@ -263,14 +378,22 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   searchButton: {
-    backgroundColor: colors.primary,
     borderRadius: borderRadius.xl,
+    overflow: "hidden",
+  },
+  searchButtonGradient: {
+    flexDirection: "row",
+    alignItems: "center",
     padding: spacing.md,
   },
-  searchButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  searchButtonIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: spacing.md,
   },
   searchButtonText: {
     flex: 1,
@@ -282,34 +405,56 @@ const styles = StyleSheet.create({
   },
   searchButtonSubtitle: {
     fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.85)',
+    color: "rgba(255,255,255,0.85)",
     marginTop: 2,
   },
   resultsSection: {
     paddingHorizontal: spacing.lg,
     marginTop: spacing.xl,
   },
+  resultsTitleContainer: {
+    marginBottom: spacing.md,
+  },
+  resultsTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+  },
   resultsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+  },
+  loadingResults: {
+    alignItems: "center",
+    paddingVertical: spacing.xxl,
+  },
+  loadingResultsText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
     marginTop: spacing.md,
   },
-  loader: {
-    marginVertical: spacing.xl,
-  },
   emptyState: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
+    alignItems: "center",
+    paddingVertical: spacing.xxl,
+  },
+  emptyIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.backgroundAlt,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: spacing.md,
   },
   emptyText: {
     fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semibold,
     color: colors.text,
     marginBottom: spacing.xs,
   },
   emptySubtext: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.md,
     color: colors.textSecondary,
   },
   bottomPadding: {

@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { memo, useRef, useEffect } from "react";
+import { Text, StyleSheet, Animated } from "react-native";
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-  Animated,
-} from 'react-native';
-import { colors, spacing, borderRadius, fontSize, fontWeight, shadows } from '../constants/theme';
+  colors,
+  spacing,
+  borderRadius,
+  fontSize,
+  fontWeight,
+  shadows,
+} from "../constants/theme";
+import { AnimatedPressable } from "./ui";
 
 interface IngredientChipProps {
   name: string;
@@ -14,23 +17,55 @@ interface IngredientChipProps {
   onPress: () => void;
 }
 
-export default function IngredientChip({
+function IngredientChip({
   name,
   emoji,
   isSelected,
   onPress,
 }: IngredientChipProps) {
+  const scaleAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+
+  useEffect(() => {
+    Animated.spring(scaleAnim, {
+      toValue: isSelected ? 1 : 0,
+      useNativeDriver: true,
+      friction: 5,
+    }).start();
+  }, [isSelected, scaleAnim]);
+
+  const animatedStyle = {
+    transform: [
+      {
+        scale: scaleAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [1, 1.05],
+        }),
+      },
+    ],
+  };
+
   return (
-    <TouchableOpacity
+    <AnimatedPressable
       style={[
         styles.container,
         isSelected ? styles.selected : styles.unselected,
         isSelected && shadows.sm,
       ]}
       onPress={onPress}
-      activeOpacity={0.7}
+      hapticFeedback="selection"
+      scaleValue={0.95}
+      accessibilityRole="checkbox"
+      accessibilityLabel={`${name} ingredient`}
+      accessibilityState={{ checked: isSelected }}
+      accessibilityHint={
+        isSelected
+          ? `Tap to remove ${name} from selection`
+          : `Tap to add ${name} to selection`
+      }
     >
-      <Text style={styles.emoji}>{emoji}</Text>
+      <Animated.Text style={[styles.emoji, animatedStyle]}>
+        {emoji}
+      </Animated.Text>
       <Text
         style={[
           styles.name,
@@ -39,15 +74,17 @@ export default function IngredientChip({
       >
         {name}
       </Text>
-    </TouchableOpacity>
+    </AnimatedPressable>
   );
 }
 
+export default memo(IngredientChip);
+
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     borderRadius: borderRadius.lg,

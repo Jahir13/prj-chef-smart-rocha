@@ -1,12 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from "react";
+import { View, TextInput, Pressable, StyleSheet } from "react-native";
+import { Search, X } from "lucide-react-native";
 import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-import { Search, X } from 'lucide-react-native';
-import { colors, spacing, borderRadius, fontSize, shadows } from '../constants/theme';
+  colors,
+  spacing,
+  borderRadius,
+  fontSize,
+  shadows,
+} from "../constants/theme";
+import { useDebounce } from "../hooks/useAsync";
+import { useHaptics } from "../hooks/useHaptics";
 
 interface SearchBarProps {
   placeholder?: string;
@@ -15,39 +18,31 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({
-  placeholder = 'Search recipes...',
+  placeholder = "Search recipes...",
   onSearch,
   debounceMs = 500,
 }: SearchBarProps) {
-  const [query, setQuery] = useState('');
-  const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null);
+  const [query, setQuery] = useState("");
+  const debouncedQuery = useDebounce(query, debounceMs);
+  const { trigger } = useHaptics();
+
+  // Trigger search when debounced query changes
+  useEffect(() => {
+    onSearch(debouncedQuery);
+  }, [debouncedQuery, onSearch]);
 
   const handleChangeText = useCallback((text: string) => {
     setQuery(text);
-
-    // Clear existing timer
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-
-    // Set new timer for debounced search
-    const timer = setTimeout(() => {
-      onSearch(text);
-    }, debounceMs);
-
-    setDebounceTimer(timer);
-  }, [debounceTimer, debounceMs, onSearch]);
+  }, []);
 
   const handleClear = useCallback(() => {
-    setQuery('');
-    onSearch('');
-    if (debounceTimer) {
-      clearTimeout(debounceTimer);
-    }
-  }, [debounceTimer, onSearch]);
+    trigger("light");
+    setQuery("");
+    onSearch("");
+  }, [onSearch, trigger]);
 
   return (
-    <View style={[styles.container, shadows.sm]}>
+    <View style={[styles.container, shadows.sm]} accessibilityRole="search">
       <Search size={20} color={colors.textSecondary} style={styles.icon} />
       <TextInput
         style={styles.input}
@@ -58,11 +53,19 @@ export default function SearchBar({
         returnKeyType="search"
         autoCapitalize="none"
         autoCorrect={false}
+        accessibilityLabel="Search input"
+        accessibilityHint="Type to search for recipes"
       />
       {query.length > 0 && (
-        <TouchableOpacity onPress={handleClear} style={styles.clearButton}>
+        <Pressable
+          onPress={handleClear}
+          style={styles.clearButton}
+          accessibilityRole="button"
+          accessibilityLabel="Clear search"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
           <X size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
+        </Pressable>
       )}
     </View>
   );
@@ -70,8 +73,8 @@ export default function SearchBar({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.surface,
     borderRadius: borderRadius.full,
     paddingHorizontal: spacing.md,
